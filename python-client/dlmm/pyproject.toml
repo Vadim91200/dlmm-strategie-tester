@@ -10,6 +10,7 @@ python = "^3.12"
 solders = "^0.21.0"
 solana = "^0.34.3"
 requests = "^2.32.3"
+dotenv = "^0.9.9"
 
 
 [tool.poetry.group.dev.dependencies]
