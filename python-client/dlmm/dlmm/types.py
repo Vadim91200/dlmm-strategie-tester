@@ -29,7 +29,7 @@ class ActivationType(Enum):
     Timestamp=1,
 
     def __str__(self) -> str:
-        return f"{self.value[1]}
+        return f"{self.value[1]}"
     
     def __repr__(self) -> str:
         return self.name
@@ -136,7 +136,6 @@ class PositionData():
     fee_Y: int
     reward_one: int
     reward_two: int
-    fee_owner: str
     total_claimed_fee_X_amount: int
     total_claimed_fee_Y_amount: int
 
@@ -161,8 +160,6 @@ class PositionData():
             raise AttributeError("rewardOne is required")
         if data.get("rewardTwo") is None:
             raise AttributeError("rewardTwo is required")
-        if data.get("feeOwner") is None:
-            raise AttributeError("feeOwner is required")
         if data.get("totalClaimedFeeXAmount") is None:
             raise AttributeError("totalClaimedFeeXAmount is required")
         if data.get("totalClaimedFeeYAmount") is None:
@@ -178,7 +175,6 @@ class PositionData():
         self.fee_Y = data["feeY"]
         self.reward_one = data["rewardOne"]
         self.reward_two = data["rewardTwo"]
-        self.fee_owner = data["feeOwner"]
         self.total_claimed_fee_X_amount = data["totalClaimedFeeXAmount"]
         self.total_claimed_fee_Y_amount = data["totalClaimedFeeYAmount"]
     
@@ -194,7 +190,6 @@ class PositionData():
             "feeY": self.fee_Y,
             "rewardOne": self.reward_one,
             "rewardTwo": self.reward_two,
-            "feeOwner": self.fee_owner,
             "totalClaimedFeeXAmount": self.total_claimed_fee_X_amount,
             "totalClaimedFeeYAmount": self.total_claimed_fee_Y_amount
         }
@@ -265,7 +260,6 @@ class LBPair:
     token_y_mint: str
     padding1: List[int]
     padding2: List[int]
-    fee_owner: Pubkey
     base_key: str
 
     def __init__(self, data: dict) -> None:
@@ -281,7 +275,6 @@ class LBPair:
         self.token_y_mint = data["tokenYMint"]
         self.padding1 = data["padding1"]
         self.padding2 = data["padding2"]
-        self.fee_owner = Pubkey.from_string(data["feeOwner"])
         self.base_key = data["baseKey"]
         
 @dataclass

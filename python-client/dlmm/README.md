@@ -20,8 +20,8 @@ Now you can use the `dlmm` object to interact with different methods of the [DLM
 1. Install [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer/).
 2. CD to `python-client/dlmm` and Run `poetry install` to install the dependencies.
 3. Open another terminal, CD to `ts-client`.
-4. Install the dependencies using `npm install` and run the server using `npm start-server`.
-5. In the `dlmm.py`, if the API_URL is not already set to `localhost:3000`.
+4. Install the dependencies using `npm install` and run the server using `npm run start-server`.
+5. In the `dlmm.py`, if the API_URL is not already set to `http://localhost:3000`.
 6. Add new dependencies using `poetry add package_name`
 7. Now you can add and modify the python code and add tests as required under `dlmm/tests` directory and test them using `poetry run pytest`.
 
