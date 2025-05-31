@@ -38,64 +38,45 @@ export function computeBaseFactorFromFeeBps(binStep: BN, feeBps: BN) {
   const computedBaseFactor =
     (feeBps.toNumber() * BASIS_POINT_MAX) / binStep.toNumber();
 
-  // Sanity check
-  const computedBaseFactorFloor = Math.floor(computedBaseFactor);
-  if (computedBaseFactor != computedBaseFactorFloor) {
-    if (computedBaseFactorFloor >= U16_MAX) {
-      throw "base factor for the give fee bps overflow u16";
+  if (computedBaseFactor > U16_MAX) {
+    let truncatedBaseFactor = computedBaseFactor;
+    let base_power_factor = 0;
+    while (truncatedBaseFactor > U16_MAX) {
+      const remainder = truncatedBaseFactor % 10;
+      if (remainder == 0) {
+        base_power_factor += 1;
+        truncatedBaseFactor /= 10;
+      } else {
+        throw "have decimals";
+      }
     }
 
-    if (computedBaseFactorFloor == 0) {
-      throw "base factor for the give fee bps underflow";
+    return [new BN(truncatedBaseFactor), new BN(base_power_factor)];
+  } else {
+    // Sanity check
+    const computedBaseFactorFloor = Math.floor(computedBaseFactor);
+    if (computedBaseFactor != computedBaseFactorFloor) {
+      if (computedBaseFactorFloor >= U16_MAX) {
+        throw "base factor for the give fee bps overflow u16";
+      }
+
+      if (computedBaseFactorFloor == 0) {
+        throw "base factor for the give fee bps underflow";
+      }
+
+      if (computedBaseFactor % 1 != 0) {
+        throw "couldn't compute base factor for the exact fee bps";
+      }
     }
 
-    if (computedBaseFactor % 1 != 0) {
-      throw "couldn't compute base factor for the exact fee bps";
-    }
+    return [new BN(computedBaseFactor), new BN(0)];
   }
-
-  return new BN(computedBaseFactor);
 }
 
 export function getQPriceFromId(binId: BN, binStep: BN): BN {
   const bps = binStep.shln(SCALE_OFFSET).div(new BN(BASIS_POINT_MAX));
   const base = ONE.add(bps);
   return pow(base, binId);
-}
-
-export function findSwappableMinMaxBinId(binStep: BN) {
-  const base = 1 + binStep.toNumber() / BASIS_POINT_MAX;
-  const maxQPriceSupported = new Decimal("18446744073709551615");
-  const n = maxQPriceSupported.log(10).div(new Decimal(base).log(10)).floor();
-
-  let minBinId = new BN(n.neg().toString());
-  let maxBinId = new BN(n.toString());
-
-  let minQPrice = new BN(1);
-  let maxQPrice = new BN("340282366920938463463374607431768211455");
-
-  while (true) {
-    const qPrice = getQPriceFromId(minBinId, binStep);
-    if (qPrice.gt(minQPrice) && !qPrice.isZero()) {
-      break;
-    } else {
-      minBinId = minBinId.add(new BN(1));
-    }
-  }
-
-  while (true) {
-    const qPrice = getQPriceFromId(maxBinId, binStep);
-    if (qPrice.lt(maxQPrice) && !qPrice.isZero()) {
-      break;
-    } else {
-      maxBinId = maxBinId.sub(new BN(1));
-    }
-  }
-
-  return {
-    minBinId,
-    maxBinId,
-  };
 }
 
 export function getC(
@@ -176,6 +157,32 @@ export function getPositionCount(minBinId: BN, maxBinId: BN) {
   return positionCount.add(new BN(1));
 }
 
+export function findOptimumDecompressMultiplier(
+  binAmount: Map<number, BN>,
+  tokenDecimal: BN
+) {
+  let multiplier = new BN(10).pow(tokenDecimal);
+
+  while (!multiplier.isZero()) {
+    let found = true;
+
+    for (const [_binId, amount] of binAmount) {
+      const compressedAmount = amount.div(multiplier);
+      if (compressedAmount.isZero()) {
+        multiplier = multiplier.div(new BN(10));
+        found = false;
+        break;
+      }
+    }
+
+    if (found) {
+      return multiplier;
+    }
+  }
+
+  throw "Couldn't find optimum multiplier";
+}
+
 export function compressBinAmount(binAmount: Map<number, BN>, multiplier: BN) {
   const compressedBinAmount = new Map<number, BN>();
 
@@ -226,6 +233,10 @@ export function generateAmountForBinRange(
       maxPrice,
       k
     );
+
+    if (binAmount.isZero()) {
+      throw "bin amount is zero";
+    }
 
     binAmounts.set(i, binAmount);
   }

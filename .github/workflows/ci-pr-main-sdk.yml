@@ -1,4 +1,4 @@
-name: Lb Clmm SDK
+name: DLMM SDK
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  SOLANA_CLI_VERSION: 1.16.13
+  SOLANA_CLI_VERSION: 1.18.13
   NODE_VERSION: 18.14.2
   ANCHOR_CLI_VERSION: 0.28.0
 
@@ -52,8 +52,6 @@ jobs:
         with:
           path: ./ts-client/node_modules
           key: ${{ runner.os }}-${{ hashFiles('./pnpm-lock.yaml') }}
-      - run: anchor build -- --features localnet
-        shell: bash
       - run: anchor localnet -- --features localnet & sleep 2
         shell: bash
       - run: cd ts-client && pnpm install && pnpm run test

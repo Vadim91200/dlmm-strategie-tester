@@ -35,9 +35,7 @@ const keypairBuffer = fs.readFileSync(
   "utf-8"
 );
 const connection = new Connection("http://127.0.0.1:8899", "confirmed");
-const owner = Keypair.fromSecretKey(
-  new Uint8Array(JSON.parse(keypairBuffer))
-);
+const owner = Keypair.fromSecretKey(new Uint8Array(JSON.parse(keypairBuffer)));
 const programId = new PublicKey(LBCLMM_PROGRAM_IDS["localhost"]);
 
 describe("Single Bin Seed Liquidity Test", () => {
@@ -61,8 +59,16 @@ describe("Single Bin Seed Liquidity Test", () => {
     let pair: DLMM;
     let positionOwnerTokenX: web3.PublicKey;
 
-    const initialPricePerLamport = DLMM.getPricePerLamport(wenDecimal, usdcDecimal, initialPrice);
-    const binId = DLMM.getBinIdFromPrice(initialPricePerLamport, binStep, false);
+    const initialPricePerLamport = DLMM.getPricePerLamport(
+      wenDecimal,
+      usdcDecimal,
+      initialPrice
+    );
+    const binId = DLMM.getBinIdFromPrice(
+      initialPricePerLamport,
+      binStep,
+      false
+    );
 
     beforeAll(async () => {
       WEN = await createMint(
@@ -180,24 +186,14 @@ describe("Single Bin Seed Liquidity Test", () => {
       });
 
       positionOwnerTokenX = getAssociatedTokenAddressSync(
-        WEN, positionOwnerKeypair.publicKey, true
+        WEN,
+        positionOwnerKeypair.publicKey,
+        true
       );
     });
 
     it("seed liquidity single bin", async () => {
-      try {
-        const positionOwnerTokenXBalance = await connection.getTokenAccountBalance(positionOwnerTokenX)
-
-        if (positionOwnerTokenXBalance.value.amount == "0") {
-          await transfer(connection, owner, userWEN, positionOwnerTokenX, owner, 1);
-
-        }
-      } catch (err) {
-        await createAssociatedTokenAccount(connection, owner, WEN, positionOwnerKeypair.publicKey);
-        await transfer(connection, owner, userWEN, positionOwnerTokenX, owner, 1);
-      }
-
-      const ixs = await pair.seedLiquiditySingleBin(
+      const { instructions } = await pair.seedLiquiditySingleBin(
         owner.publicKey,
         baseKeypair.publicKey,
         wenSeedAmount,
@@ -206,7 +202,8 @@ describe("Single Bin Seed Liquidity Test", () => {
         positionOwnerKeypair.publicKey,
         feeOwnerKeypair.publicKey,
         owner.publicKey,
-        new BN(0)
+        new BN(0),
+        true
       );
 
       const { blockhash, lastValidBlockHeight } =
@@ -215,8 +212,7 @@ describe("Single Bin Seed Liquidity Test", () => {
         feePayer: owner.publicKey,
         blockhash,
         lastValidBlockHeight,
-      }).add(...ixs);
-
+      }).add(...instructions);
 
       const beforeTokenXBalance = await connection
         .getTokenAccountBalance(userWEN)
@@ -226,18 +222,18 @@ describe("Single Bin Seed Liquidity Test", () => {
         owner,
         baseKeypair,
       ]).catch((e) => {
-        console.error(e)
+        console.error(e);
       });
 
       const afterTokenXBalance = await connection
         .getTokenAccountBalance(userWEN)
         .then((i) => new BN(i.value.amount));
 
-      // minus 1 send to positionOwnerTokenX account
       const actualDepositedAmount = beforeTokenXBalance.sub(afterTokenXBalance);
-      expect(actualDepositedAmount.toString()).toEqual(wenSeedAmount.toString());
-    })
-
-  })
-
+      expect(actualDepositedAmount.toString()).toEqual(
+        // 1 prove token was sent to positionOwnerTokenX
+        wenSeedAmount.addn(1).toString()
+      );
+    });
+  });
 });
