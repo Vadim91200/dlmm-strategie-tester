@@ -13,8 +13,8 @@ import time
 load_dotenv()
 
 def initialize_client():
-    RPC = "https://api.devnet.solana.com"
-    pool_address = Pubkey.from_string("G7g3bN7Wj1HNPeaxTndGqjmoaq9JMHxvv3QtiGXqBYXi")
+    RPC = "https://neat-magical-market.solana-mainnet.quiknode.pro/22f4786138ebd920140d051f0ebdc6da71f058db/"
+    pool_address = Pubkey.from_string("5rCf1DM8LjKTw4YqhnoLcngyZYeNnQqztScTogYHAS6")
     client = Client(RPC)
     dlmm = DLMM_CLIENT.create(pool_address, RPC)
     assert isinstance(dlmm, DLMM)
@@ -120,6 +120,47 @@ def swap(dlmm, user, client):
     except Exception as error:
         print("🚀 ~ swap::error:", error.args[0].data.logs)
 
+def display_positions(dlmm, user):
+    positions = dlmm.get_positions_by_user_and_lb_pair(user.pubkey())
+    assert isinstance(positions, GetPositionByUser)
+    user_positions = positions.user_positions
+    
+    if not user_positions:
+        print("No active positions found.")
+        return
+    
+    # Get the active bin of the pool
+    active_bin = dlmm.get_active_bin()
+    active_bin_id = active_bin.bin_id
+    
+    print("\nActive Positions:")
+    print("-" * 50)
+    print(f"Current Active Bin ID: {active_bin_id}")
+    print("-" * 50)
+    
+    for i, position in enumerate(user_positions, 1):
+        lower_bin = position.position_data.lower_bin_id
+        upper_bin = position.position_data.upper_bin_id
+        
+        # Check if position is within active range
+        is_in_range = lower_bin <= active_bin_id <= upper_bin
+        range_status = "✅ IN RANGE" if is_in_range else "❌ OUT OF RANGE"
+        
+        print(f"Position {i}:")
+        print(f"Public Key: {position.public_key}")
+        print(f"Total X Amount: {position.position_data.total_x_amount}")
+        print(f"Total Y Amount: {position.position_data.total_y_amount}")
+        print(f"Number of Bins: {len(position.position_data.position_bin_data)}")
+        print(f"Lower Bin: {lower_bin}")
+        print(f"Upper Bin: {upper_bin}")
+        print(f"Status: {range_status}")
+        if not is_in_range:
+            if active_bin_id < lower_bin:
+                print(f"Position is {active_bin_id - lower_bin} bins below current range")
+            else:
+                print(f"Position is {upper_bin - active_bin_id} bins above current range")
+        print("-" * 50)
+
 def main():
     client, dlmm = initialize_client()
     user = get_user_keypair()
@@ -130,7 +171,8 @@ def main():
         print("2. Add Liquidity")
         print("3. Remove Liquidity")
         print("4. Swap")
-        print("5. Exit")
+        print("5. Display Active Positions")
+        print("6. Exit")
         choice = input("Enter your choice: ")
 
         if choice == '1':
@@ -150,6 +192,9 @@ def main():
             swap(dlmm, user, client)
             
         elif choice == '5':
+            display_positions(dlmm, user)
+            
+        elif choice == '6':
             break
 
         else:

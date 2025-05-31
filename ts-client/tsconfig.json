@@ -4,11 +4,15 @@
     "types": ["jest"],
     "typeRoots": ["./node_modules/@types"],
     "module": "commonjs",
-    "target": "ESNext",
+    "target": "ES2023",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "noImplicitAny": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "downlevelIteration": true,
+    "lib": ["ES2023", "DOM"],
+    "strict": true,
+    "allowSyntheticDefaultImports": true
   }
 }
